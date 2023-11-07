@@ -16,6 +16,8 @@ WriteMakefile(
         'Mojo::UserAgent'       => "8.52",
         'Try::Tiny::SmartCatch' => "0.5",
         'IO::Socket::SSL'       => "2.009",
+		'Crypt::JWT'            => '0.035',
+		'Crypt::PK::ECC'        => '0.080',
         'Carp'                  => 0,
         'JSON'                  => 0,
     },

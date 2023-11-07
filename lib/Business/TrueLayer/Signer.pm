@@ -2,7 +2,8 @@ package Business::TrueLayer::Signer;
 
 =head1 NAME
 
-Business::TrueLayer::Signer - Class to handle request signing
+Business::TrueLayer::Signer - Class to handle request signing TrueLayer
+requests as described by https://github.com/TrueLayer/truelayer-signing/blob/main/request-signing-v2.md
 
 =head1 SYNOPSIS
 
@@ -34,6 +35,61 @@ use feature qw/ signatures /;
 
 use Moose;
 no warnings qw/ experimental::signatures /;
+
+use Business::TrueLayer::Types;
+
+use Crypt::JWT qw/ encode_jwt /;
+
+has 'kid' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
+
+has 'private_key' => (
+    is       => 'ro',
+    isa      => 'EC512:PrivateKey',
+    coerce   => 1,
+    required => 1,
+);
+
+sub sign_request (
+    $self,
+    $http_verb,
+    $absolute_path,
+    $idempotency_key,
+    $serialized_http_request_body = undef,
+) {
+    $http_verb = uc( $http_verb );
+
+    my $jws_token = encode_jwt(
+        alg        => 'ES512',
+        key        => $self->private_key,
+
+        extra_headers => {
+            kid        => $self->kid,
+            tl_version => "2",
+            tl_headers => "Idempotency-Key",
+        },
+
+        payload    => join(
+            "\n",grep { defined }
+                "$http_verb $absolute_path",
+               "Idempotency-Key: $idempotency_key",
+                $serialized_http_request_body
+        ),
+    );
+
+    # we need to "detach" the payload from the JWS, so basically remove
+    # the middle bit
+    my ( $header,$payload,$signature) = split( /\./,$jws_token );
+    my $jws_token_with_detached_payload = join( '..',$header,$signature );
+
+    return (
+        $jws_token_with_detached_payload,
+        $jws_token
+    );
+}
 
 1;
 

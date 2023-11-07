@@ -29,6 +29,20 @@ subtype 'Signer'
     }
 ;
 
+subtype 'EC512:PrivateKey'
+    => as 'Object'
+    => where {
+        $_->isa( 'Crypt::PK::ECC' )
+    }
+;
+
+coerce 'EC512:PrivateKey'
+    => from 'Value'
+    => via {
+        Crypt::PK::ECC->new( $_ )
+    }
+;
+
 1;
 
 # vim: ts=4:sw=4:et

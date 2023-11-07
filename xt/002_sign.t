@@ -17,9 +17,12 @@ my $TrueLayer = Business::TrueLayer->new(
     my $creds = Test::Credentials->new->TO_JSON,
 );
 
-ok(
-    my $access_token = $TrueLayer->authenticator->access_token,
-    'got an acces token'
+my ( $jws ) = $TrueLayer->signer->sign_request(
+    'post',
+    '/payouts',
+    '{}',
 );
+
+ok( $jws,'->sign_request' );
 
 done_testing();
