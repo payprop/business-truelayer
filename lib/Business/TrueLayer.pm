@@ -56,6 +56,7 @@ no warnings qw/ experimental::signatures /;
 use Business::TrueLayer::Types;
 use Business::TrueLayer::Authenticator;
 use Business::TrueLayer::Signer;
+use Business::TrueLayer::MerchantAccount;
 
 $Business::TrueLayer::VERSION = '0.01';
 
@@ -95,9 +96,41 @@ sub access_token ( $self ) {
     return $self->authenticator->access_token;
 }
 
+=head2 merchant_accounts
+
+Get a list of merchant accounts, C<$id> is optional to specifiy just one.
+
+    my @merchant_accounts = $TrueLayer->merchant_accounts( $id );
+
+Returns a list of L<Business::TrueLayer::MerchantAccount> objects.
+
+=cut
+
+sub merchant_accounts (
+    $self,
+    $id = undef
+) {
+    my $data = $self->api_get(
+        "/v3/merchant-accounts" . ( $id ? "/$id" : "" )
+    );
+
+    my @merchants_accounts;
+
+    foreach my $item ( $data->{items}->@* ) {
+        push(
+            @merchants_accounts,
+            Business::TrueLayer::MerchantAccount->new( $item->%* ),
+        );
+    }
+
+    return @merchants_accounts;
+}
+
 1;
 
 =head1 SEE ALSO
+
+L<Business::TrueLayer::MerchantAccount>
 
 =cut
 

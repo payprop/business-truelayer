@@ -34,6 +34,7 @@ subtest '->idempotency_key' => sub {
 };
 
 $ua->mock( post => sub { shift } );
+$ua->mock( get => sub { shift } );
 $ua->mock( result  => sub { shift } );
 $ua->mock( body => sub { } );
 
@@ -47,6 +48,11 @@ subtest 'is_success' => sub {
     lives_ok(
         sub { $Request->api_post( '/foo',{} ) },
         '->api_post',
+    );
+
+    lives_ok(
+        sub { $Request->api_get( '/foo' ) },
+        '->api_get',
     );
 };
 

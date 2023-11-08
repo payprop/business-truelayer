@@ -101,10 +101,17 @@ sub api_post (
             'Idempotency-Key' => $idempotency_key,
             'Accept'        => 'application/json',
             'Content-Type'  => 'application/json',
-        },
+        }
         => json => $http_request_body,
     )->result;
 
+    return $self->_process_response( $res );
+}
+
+sub _process_response (
+    $self,
+    $res
+) {
     if ( $res->is_success ) {
 
         # we don't always have a response body
@@ -122,6 +129,24 @@ sub api_post (
     }
 
     confess( "API POST failed, unknown reason" );
+}
+
+sub api_get (
+    $self,
+    $absolute_path,
+) {
+    # GET requests don't need to be signed or require an Idempotency-Key
+    my $res = $self->_ua->get(
+        "https://@{[ $self->api_host ]}$absolute_path",
+        => {
+            'Authorization' => "Bearer "
+                . $self->authenticator->access_token,
+            'Accept'        => 'application/json',
+            'Content-Type'  => 'application/json',
+        }
+    )->result;
+
+    return $self->_process_response( $res );
 }
 
 1;
