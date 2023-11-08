@@ -18,8 +18,8 @@ my $TrueLayer = Business::TrueLayer->new(
 );
 
 ok(
-    my $access_token = $TrueLayer->authenticator->access_token,
-    'got an acces token'
+    my $access_token = $TrueLayer->access_token,
+    'got an access token'
 );
 
 done_testing();

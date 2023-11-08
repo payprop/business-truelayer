@@ -5,10 +5,6 @@ package Business::TrueLayer::Signer;
 Business::TrueLayer::Signer - Class to handle request signing TrueLayer
 requests as described by https://github.com/TrueLayer/truelayer-signing/blob/main/request-signing-v2.md
 
-=head1 SYNOPSIS
-
-
-
 =head1 DESCRIPTION
 
 To use the TrueLayer Payments API v3, you need a public and private key
@@ -25,13 +21,17 @@ Then, to generate your public key, run this command in your terminal.
 
     openssl ec -in ec512-private-key.pem -pubout -out ec512-public-key.pem
 
-You then need to upload the public key to the TrueLayer console
+You then need to upload the public key to the TrueLayer console.
+
+Having done that you can supply the path to your private key when using
+the main L<Business::TrueLayer> module. You shouldn't need to do anything
+else here, the distribution will handle signing when creating requests.
 
 =cut
 
 use strict;
 use warnings;
-use feature qw/ signatures /;
+use feature qw/ signatures postderef /;
 
 use Moose;
 no warnings qw/ experimental::signatures /;

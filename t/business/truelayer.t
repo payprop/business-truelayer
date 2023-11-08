@@ -7,17 +7,17 @@ use Test::Most;
 
 use_ok( 'Business::TrueLayer' );
 isa_ok(
-	my $TrueLayer = Business::TrueLayer->new(
+    my $TrueLayer = Business::TrueLayer->new(
         client_id => 'TL-CLIENT-ID',
         client_secret => 'super-secret-client-secret',
         host => '/dev/null',
-	),
-	'Business::TrueLayer'
+    ),
+    'Business::TrueLayer'
 );
 
 isa_ok(
-	$TrueLayer->authenticator,
-	'Business::TrueLayer::Authenticator'
+    $TrueLayer->authenticator,
+    'Business::TrueLayer::Authenticator'
 );
 
 done_testing();

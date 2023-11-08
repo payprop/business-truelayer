@@ -17,12 +17,6 @@ my $TrueLayer = Business::TrueLayer->new(
     my $creds = Test::Credentials->new->TO_JSON,
 );
 
-my ( $jws ) = $TrueLayer->signer->sign_request(
-    'post',
-    '/payouts',
-    '{}',
-);
-
-ok( $jws,'->sign_request' );
+ok( $TrueLayer->test_signature,'->test_signature' );
 
 done_testing();

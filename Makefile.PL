@@ -16,14 +16,16 @@ WriteMakefile(
         'Mojo::UserAgent'       => "8.52",
         'Try::Tiny::SmartCatch' => "0.5",
         'IO::Socket::SSL'       => "2.009",
-		'Crypt::JWT'            => '0.035',
-		'Crypt::PK::ECC'        => '0.080',
+        'Crypt::JWT'            => '0.035',
+        'Crypt::PK::ECC'        => '0.080',
+        'Data::GUID'            => '0.051',
         'Carp'                  => 0,
         'JSON'                  => 0,
     },
     BUILD_REQUIRES => {
-        'Test::Most'       => 0,
-        'Test::MockObject' => 0,
+        'Test::Most'       => '0.38',
+        'Test::MockObject' => '1.20200122',
+        'Test::Exception'  => '0.43',
     },
     META_MERGE => {
         resources => {

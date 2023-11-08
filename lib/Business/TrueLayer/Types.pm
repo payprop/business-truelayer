@@ -5,7 +5,7 @@ use warnings;
 
 use Moose::Util::TypeConstraints;
 
-# UserAgent can be a Test::MockObject so we can do "end to end"
+# objects can be Test::MockObject(s) so we can do "end to end"
 # testing without actually going out on the wire
 subtype 'UserAgent'
     => as 'Object'
@@ -19,6 +19,7 @@ subtype 'Authenticator'
     => as 'Object'
     => where {
         $_->isa( 'Business::TrueLayer::Authenticator' )
+        or $_->isa( 'Test::MockObject' )
     }
 ;
 
@@ -26,6 +27,7 @@ subtype 'Signer'
     => as 'Object'
     => where {
         $_->isa( 'Business::TrueLayer::Signer' )
+        or $_->isa( 'Test::MockObject' )
     }
 ;
 

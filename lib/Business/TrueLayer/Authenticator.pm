@@ -2,24 +2,19 @@ package Business::TrueLayer::Authenticator;
 
 =head1 NAME
 
-Business::TrueLayer::Authenticator - Class to handle request authentication
-
-=head1 SYNOPSIS
-
-
-
-=head1 DESCRIPTION
-
-
+Business::TrueLayer::Authenticator - Class to handle low level request
+authentication, you probably don't need to use this and should use the
+main L<Business::TrueLayer> module instead.
 
 =cut
 
 use strict;
 use warnings;
-use feature qw/ signatures /;
+use feature qw/ signatures postderef /;
 
 use Moose;
 extends 'Business::TrueLayer::Attributes';
+extends 'Business::TrueLayer::Request';
 
 no warnings qw/ experimental::signatures /;
 
@@ -28,21 +23,7 @@ use Business::TrueLayer::Types;
 use Try::Tiny::SmartCatch;
 use Mojo::UserAgent;
 use Carp qw/ confess /;
-use JSON qw/ decode_json /;
-
-has '_ua' => (
-    is        => 'ro',
-    isa       => 'UserAgent',
-    required  => 0,
-    default   => sub {
-        return Mojo::UserAgent->new
-            ->max_redirects( 0 )
-            ->connect_timeout( 5 )
-            ->inactivity_timeout( 5 )
-            ->request_timeout( 5 )
-        ;
-    },
-);
+use JSON;
 
 has [ qw/ auth_host / ] => (
     is        => 'ro',
@@ -105,7 +86,7 @@ sub _authenticate ( $self ) {
     )->result;
 
     my $res_content = try sub {
-        decode_json( $res->body );
+        JSON->new->canonical->decode( $res->body );
     },
     catch_default sub {
         confess( "TrueLayer response malformed: $res" );

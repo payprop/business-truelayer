@@ -5,22 +5,52 @@ package Business::TrueLayer;
 Business::TrueLayer - Perl library for interacting with the TrueLayer v3 API
 (https://docs.truelayer.com/)
 
+=head1 VERSION
+
+v0.01
+
 =head1 SYNOPSIS
 
+    my $TrueLayer = Business::TrueLayer->new(
 
+        # required constructor arguments
+        client_id     => $truelayer_client_id,
+        client_secret => $truelauer_client_secret,
+        kid           => $truelayer_kid,
+        private_key   => '/path/to/private/key',
+
+        # optional constructor arguments (with defaults)
+        host          => 'truelayer.com',
+        api_host      => 'api.truelayer.com',
+        auth_host     => 'auth.truelayer.com',
+    );
+
+    # valid your setup (neither required in live usage):
+    $TrueLayer->test_signature;
+    my $access_token = $TrueLayer->access_token;
 
 =head1 DESCRIPTION
 
+L<Business::TrueLayer> is a client library for interacting with the
+TrueLayer v3 API. It implementes the necesary signing and transport logic
+to allow you to just focus on just the endpoints you want to call.
 
+The initial version of this distribution supports just those steps that
+described at L<https://docs.truelayer.com/docs/quickstart-make-a-payment>
+and others will be added as necessary (pull requests also welcome).
+
+=head1 DEBUGGING
+
+Set C<MOJO_CLIENT_DEBUG=1> for user agent and transport debug output.
 
 =cut
 
 use strict;
 use warnings;
-use feature qw/ signatures /;
+use feature qw/ signatures postderef /;
 
 use Moose;
-extends 'Business::TrueLayer::Attributes';
+extends 'Business::TrueLayer::Request';
 no warnings qw/ experimental::signatures /;
 
 use Business::TrueLayer::Types;
@@ -29,33 +59,46 @@ use Business::TrueLayer::Signer;
 
 $Business::TrueLayer::VERSION = '0.01';
 
-has 'authenticator' => (
-    is        => 'ro',
-    isa       => 'Authenticator',
-	lazy      => 1,
-    default   => sub ( $self ) {
+=head1 METHODS
 
-		Business::TrueLayer::Authenticator->new(
-			client_id     => $self->client_id,
-			client_secret => $self->client_secret,
-			host          => $self->host,
-		);
-	},
-);
+=head2 test_signature
 
-has 'signer' => (
-    is        => 'ro',
-    isa       => 'Signer',
-	lazy      => 1,
-    default   => sub ( $self ) {
+Tests if your signature and signing is valid.
 
-		Business::TrueLayer::Signer->new(
-			kid         => $self->kid,
-			private_key => $self->private_key,
-		);
-	},
-);
+    $TrueLayer->test_signature;
+
+Returns 1 on success, throws an exception otherwise.
+
+=cut
+
+sub test_signature ( $self ) {
+
+    $self->api_post(
+        '/test-signature',
+        { nonce => "9f952b2e-1675-4be8-bb39-6f4343803c2f" },
+    );
+
+    return 1;
+}
+
+=head2 access_token
+
+Get an access token.
+
+    my $access_token = $TrueLayer->access_token;
+
+Returns an access token on success, throws an exception otherwise.
+
+=cut
+
+sub access_token ( $self ) {
+    return $self->authenticator->access_token;
+}
 
 1;
+
+=head1 SEE ALSO
+
+=cut
 
 # vim: ts=4:sw=4:et
