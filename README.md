@@ -27,6 +27,17 @@ v0.01
     $TrueLayer->test_signature;
     my $access_token = $TrueLayer->access_token;
 
+    # create a payment
+    my $Payment = $TrueLayer->create_payment( $args );
+    my $link    = $Payment->hosted_payment_page_link( $redirect_uri );
+
+    # get status of a payment
+    my $Payment = $TrueLayer->get_payment( $payment_id );
+
+    if ( $Payment->settled ) {
+        ...
+    }
+
 # DESCRIPTION
 
 [Business::TrueLayer](https://metacpan.org/pod/Business%3A%3ATrueLayer) is a client library for interacting with the
@@ -67,6 +78,32 @@ Get a list of merchant accounts, `$id` is optional to specifiy just one.
 
 Returns a list of [Business::TrueLayer::MerchantAccount](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3AMerchantAccount) objects.
 
+## create\_payment
+
+Instantiates a [Business::TrueLayer::Payment](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3APayment) object then calls the
+API to create it - will return the object to allow you to inspect it
+and call methods on it.
+
+    my $Payment = $TrueLayer->create_payment( $args );
+
+`$args` should be a hash reference of the necessary attributes to
+instantiate a [Business::TrueLayer::Payment](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3APayment) object - see the perldoc
+for that class for the attributes required.
+
+Any issues here will result in an exception being thrown.
+
+## get\_payment
+
+Calls the API to get the details for a payment for the given id then
+instantiates a [Business::TrueLayer::Payment](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3APayment) object for return to
+the caller
+
+    my $Payment = $TrueLayer->get_payment( $payment_id );
+
+Any issues here will result in an exception being thrown.
+
 # SEE ALSO
 
 [Business::TrueLayer::MerchantAccount](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3AMerchantAccount)
+
+[Business::TrueLayer::Payment](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3APayment)

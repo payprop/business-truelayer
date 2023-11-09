@@ -29,6 +29,17 @@ v0.01
     $TrueLayer->test_signature;
     my $access_token = $TrueLayer->access_token;
 
+    # create a payment
+    my $Payment = $TrueLayer->create_payment( $args );
+    my $link    = $Payment->hosted_payment_page_link( $redirect_uri );
+
+    # get status of a payment
+    my $Payment = $TrueLayer->get_payment( $payment_id );
+
+    if ( $Payment->settled ) {
+        ...
+    }
+
 =head1 DESCRIPTION
 
 L<Business::TrueLayer> is a client library for interacting with the
@@ -53,10 +64,12 @@ use Moose;
 extends 'Business::TrueLayer::Request';
 no warnings qw/ experimental::signatures /;
 
-use Business::TrueLayer::Types;
 use Business::TrueLayer::Authenticator;
-use Business::TrueLayer::Signer;
 use Business::TrueLayer::MerchantAccount;
+use Business::TrueLayer::Payment;
+use Business::TrueLayer::Signer;
+use Business::TrueLayer::Types;
+use Business::TrueLayer::User;
 
 $Business::TrueLayer::VERSION = '0.01';
 
@@ -126,11 +139,95 @@ sub merchant_accounts (
     return @merchants_accounts;
 }
 
+=head2 create_payment
+
+Instantiates a L<Business::TrueLayer::Payment> object then calls the
+API to create it - will return the object to allow you to inspect it
+and call methods on it.
+
+    my $Payment = $TrueLayer->create_payment( $args );
+
+C<$args> should be a hash reference of the necessary attributes to
+instantiate a L<Business::TrueLayer::Payment> object - see the perldoc
+for that class for the attributes required.
+
+Any issues here will result in an exception being thrown.
+
+=cut
+
+sub create_payment (
+    $self,
+    $payment_constuctor_args,
+) {
+    # instantiate the object first, will do type checking before
+    # we send a request to the API
+    my $Payment = Business::TrueLayer::Payment->new(
+        $payment_constuctor_args->%*
+    );
+
+    # send request to the API
+    my $response = $self->api_post(
+        '/v3/payments',
+        $payment_constuctor_args,
+    );
+
+    # return a new instance of the Payment object, with the original
+    # args and the details from the response
+    $Payment = $Payment->new(
+        $payment_constuctor_args->%*,
+
+        id             => $response->{id},
+        status         => $response->{status},
+        resource_token => $response->{resource_token},
+
+        host           => $self->host,
+
+        user => Business::TrueLayer::User->new(
+            $payment_constuctor_args->{user}->%*,
+            id => $response->{user}{id},
+        ),
+    );
+
+
+    return $Payment;
+}
+
+=head2 get_payment
+
+Calls the API to get the details for a payment for the given id then
+instantiates a L<Business::TrueLayer::Payment> object for return to
+the caller
+
+    my $Payment = $TrueLayer->get_payment( $payment_id );
+
+Any issues here will result in an exception being thrown.
+
+=cut
+
+sub get_payment (
+    $self,
+    $payment_id,
+) {
+    # send request to the API
+    my $response = $self->api_get(
+        '/v3/payments/' . $payment_id,
+    );
+
+    my $Payment = Business::TrueLayer::Payment->new(
+        $response->%*,
+        host => $self->host,
+    );
+
+    return $Payment;
+}
+
 1;
 
 =head1 SEE ALSO
 
 L<Business::TrueLayer::MerchantAccount>
+
+L<Business::TrueLayer::Payment>
 
 =cut
 

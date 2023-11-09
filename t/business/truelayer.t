@@ -52,4 +52,64 @@ subtest '->merchant_accounts' => sub {
     );
 };
 
+subtest '->create_payment' => sub {
+
+    no warnings qw/ once redefine /;
+    *Business::TrueLayer::Request::api_post = sub {
+        return {
+            "id" => "SOMEID",
+            "user" => {
+                "id" => "ABABAB-CDCDCD-EFEFEF-GHGHGH"
+            },
+            "resource_token" => "a-secret-token",
+            "status" => "authorization_required"
+        };
+    };
+
+    # taken from https://docs.truelayer.com/docs/create-a-payment
+    my $args = {
+        "currency"       => "GBP",
+        "payment_method" => {
+            "type"               => "bank_transfer",
+            "provider_selection" => {
+                "type"   => "user_selected",
+                "filter" => {
+                    "countries"         => ["DE"],
+                    "release_channel"   => "general_availability",
+                    "customer_segments" => ["retail"]
+                },
+                "scheme_selection" => {
+                    "type"               => "instant_only",
+                    "allow_remitter_fee" => 0,
+                }
+            },
+            "beneficiary" => {
+                "type"                => "merchant_account",
+                "verification"        => { "type" => "automated" },
+                "merchant_account_id" => "AB8FA060-3F1B-4AE8-9692-4AA3131020D0",
+                "account_holder_name" => "Ben Eficiary",
+                "reference"           => "payment-ref"
+            }
+        },
+        "user" => {
+            "id"            => "f9b48c9d-176b-46dd-b2da-fe1a2b77350c",
+            "name"          => "Remi Terr",
+            "email"         => 'remi.terr@aol.com',
+            "phone"         => "+447777777777",
+            "date_of_birth" => "1990-01-31"
+        },
+        "amount_in_minor" => 1
+    };
+
+    isa_ok(
+        my $Payment = $TrueLayer->create_payment( $args ),
+        'Business::TrueLayer::Payment',
+    );
+
+    is( $Payment->id,'SOMEID','payment->id' );
+    is( $Payment->status,'authorization_required','payment->status' );
+    is( $Payment->resource_token,'a-secret-token','payment->resource_token' );
+    is( $Payment->user->id,'ABABAB-CDCDCD-EFEFEF-GHGHGH','payment->user->id' );
+};
+
 done_testing();

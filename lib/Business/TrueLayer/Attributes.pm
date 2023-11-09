@@ -11,7 +11,7 @@ no warnings qw/ experimental::signatures /;
 has [ qw/ client_id client_secret / ] => (
     is        => 'ro',
     isa       => 'Str',
-    required  => 1,
+    required  => 0,
 );
 
 has 'host' => (
@@ -30,6 +30,16 @@ has api_host => (
     lazy      => 1,
     default   => sub ( $self ) {
         return join( '.','api',$self->host );
+    }
+);
+
+has payment_host => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    lazy      => 1,
+    default   => sub ( $self ) {
+        return join( '.','payment',$self->host );
     }
 );
 

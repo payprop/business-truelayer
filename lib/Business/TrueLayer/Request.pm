@@ -82,13 +82,15 @@ sub api_post (
     # sign the request
     my $idempotency_key = $self->idempotency_key;
 
+    my $json = $http_request_body
+        ? JSON->new->utf8->canonical->encode( $http_request_body )
+        : undef;
+
     my ( $jws ) = $self->signer->sign_request(
         'POST',
         $absolute_path,
         $idempotency_key,
-        $http_request_body
-            ? JSON->new->utf8->canonical->encode( $http_request_body )
-            : undef,
+        $json,
     );
 
     # POST the request
@@ -99,10 +101,10 @@ sub api_post (
                 . $self->authenticator->access_token,
             'Tl-Signature'    => $jws,
             'Idempotency-Key' => $idempotency_key,
-            'Accept'        => 'application/json',
-            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json; charset=UTF-8',
+            'Content-Type'  => 'application/json; charset=UTF-8',
         }
-        => json => $http_request_body,
+        => $json
     )->result;
 
     return $self->_process_response( $res );
