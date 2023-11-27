@@ -13,7 +13,6 @@ use warnings;
 use feature qw/ signatures postderef /;
 
 use Moose;
-extends 'Business::TrueLayer::Attributes';
 extends 'Business::TrueLayer::Request';
 
 no warnings qw/ experimental::signatures /;

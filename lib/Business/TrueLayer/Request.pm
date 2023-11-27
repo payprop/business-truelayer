@@ -13,7 +13,6 @@ use warnings;
 use feature qw/ signatures postderef state /;
 
 use Moose;
-extends 'Business::TrueLayer::Attributes';
 
 no warnings qw/ experimental::signatures /;
 
@@ -28,6 +27,48 @@ use JSON;
 use Data::GUID;
 
 my $MAX_REDIRECTS = 5;
+
+has [ qw/ client_id client_secret kid / ] => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+);
+
+has 'host' => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    default   => sub ( $self ) {
+        'truelayer.com',
+    }
+);
+
+has api_host => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    lazy      => 1,
+    default   => sub ( $self ) {
+        return join( '.','api',$self->host );
+    }
+);
+
+has payment_host => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    lazy      => 1,
+    default   => sub ( $self ) {
+        return join( '.','payment',$self->host );
+    }
+);
+
+has 'private_key' => (
+    is       => 'ro',
+    isa      => 'EC512:PrivateKey',
+    coerce   => 1,
+    required => 0,
+);
 
 has '_ua' => (
     is        => 'ro',
@@ -53,6 +94,7 @@ has 'authenticator' => (
             client_id     => $self->client_id,
             client_secret => $self->client_secret,
             host          => $self->host,
+            _ua           => $self->_ua,
         );
     },
 );
