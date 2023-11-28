@@ -50,7 +50,7 @@ has [ qw/ release_channel / ] => (
 my @iso_codes = map { uc( $_->{word} ) }
     complete_country_code()->@*;
 
-enum 'Country' => [ @iso_codes ];
+enum 'Country' => \@iso_codes;
 
 has [ qw/ countries / ] => (
     is       => 'ro',

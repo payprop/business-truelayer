@@ -53,12 +53,6 @@ has [ qw/ name email phone / ] => (
     required => 0,
 );
 
-has [ qw/ email phone / ] => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 0,
-);
-
 class_type 'DateTime';
 
 coerce 'DateTime'

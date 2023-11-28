@@ -83,15 +83,15 @@ subtype 'AccountIdentifiers'
 coerce 'AccountIdentifiers'
     => from 'ArrayRef'
     => via {
-        my $AccountIdentifiers = [];
+        my @AccountIdentifiers;
         foreach my $item ( $_->@* ) {
             push(
-                @{ $AccountIdentifiers },
+                @AccountIdentifiers,
                 Business::TrueLayer::MerchantAccount::Identifier->new( %{ $item } )
             );
         }
 
-        return $AccountIdentifiers;
+        return \@AccountIdentifiers;
     }
 ;
 

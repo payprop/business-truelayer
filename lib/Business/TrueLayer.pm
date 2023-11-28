@@ -159,9 +159,9 @@ sub create_payment (
     $self,
     $payment_constuctor_args,
 ) {
-    # instantiate the object first, will do type checking before
+    # instantiate an object first to perform type checking before
     # we send a request to the API
-    my $Payment = Business::TrueLayer::Payment->new(
+    Business::TrueLayer::Payment->new(
         $payment_constuctor_args->%*
     );
 
@@ -173,23 +173,18 @@ sub create_payment (
 
     # return a new instance of the Payment object, with the original
     # args and the details from the response
-    $Payment = $Payment->new(
+    return Business::TrueLayer::Payment->new(
         $payment_constuctor_args->%*,
 
-        id             => $response->{id},
-        status         => $response->{status},
-        resource_token => $response->{resource_token},
+	$response->%{ qw / id status resource_token /},
 
-        host           => $self->host,
+        host => $self->host,
 
         user => Business::TrueLayer::User->new(
             $payment_constuctor_args->{user}->%*,
             id => $response->{user}{id},
         ),
     );
-
-
-    return $Payment;
 }
 
 =head2 get_payment
@@ -213,12 +208,10 @@ sub get_payment (
         '/v3/payments/' . $payment_id,
     );
 
-    my $Payment = Business::TrueLayer::Payment->new(
+    return Business::TrueLayer::Payment->new(
         $response->%*,
         host => $self->host,
     );
-
-    return $Payment;
 }
 
 1;

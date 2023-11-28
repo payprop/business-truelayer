@@ -41,7 +41,7 @@ is( $Authenticator->access_token,'AAABBBCCCDDD','->access_token' );
 is( $Authenticator->_auth_token,'AAABBBCCCDDD','->_auth_token' );
 ok( ! $Authenticator->_refresh_token,'! ->_refresh_token' );
 is( $Authenticator->_token_type,'Bearer','->_token_type' );
-ok( $Authenticator->_expires_at > time + 3595,'->_expires_at' );
+cmp_ok( $Authenticator->_expires_at,'>',time + 3595,'->_expires_at' );
 ok( ! $Authenticator->_token_is_expired,'! ->_token_is_expired' );
 
 done_testing();
