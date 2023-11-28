@@ -15,11 +15,11 @@ as used in the TrueLayer v3 API.
 
 use strict;
 use warnings;
-use feature qw/ signatures postderef state /;
+use feature qw/ signatures postderef /;
 
 use Moose;
 use Moose::Util::TypeConstraints;
-no warnings qw/ experimental::signatures /;
+no warnings qw/ experimental::signatures experimental::postderef /;
 
 use namespace::autoclean;
 

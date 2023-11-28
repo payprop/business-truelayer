@@ -62,7 +62,7 @@ use feature qw/ signatures postderef /;
 
 use Moose;
 extends 'Business::TrueLayer::Request';
-no warnings qw/ experimental::signatures /;
+no warnings qw/ experimental::signatures experimental::postderef /;
 
 use Business::TrueLayer::Authenticator;
 use Business::TrueLayer::MerchantAccount;

@@ -34,7 +34,7 @@ use warnings;
 use feature qw/ signatures postderef /;
 
 use Moose;
-no warnings qw/ experimental::signatures /;
+no warnings qw/ experimental::signatures experimental::postderef /;
 
 use Business::TrueLayer::Types;
 
