@@ -7,7 +7,7 @@ Business::TrueLayer - Perl library for interacting with the TrueLayer v3 API
 
 =head1 VERSION
 
-v0.01
+v0.02
 
 =head1 SYNOPSIS
 
@@ -71,7 +71,7 @@ use Business::TrueLayer::Signer;
 use Business::TrueLayer::Types;
 use Business::TrueLayer::User;
 
-$Business::TrueLayer::VERSION = '0.01';
+$Business::TrueLayer::VERSION = '0.02';
 
 =head1 METHODS
 
@@ -176,9 +176,10 @@ sub create_payment (
     return Business::TrueLayer::Payment->new(
         $payment_constuctor_args->%*,
 
-	$response->%{ qw / id status resource_token /},
+        $response->%{ qw / id status resource_token /},
 
         host => $self->host,
+        payment_host => $self->payment_host,
 
         user => Business::TrueLayer::User->new(
             $payment_constuctor_args->{user}->%*,
@@ -211,6 +212,7 @@ sub get_payment (
     return Business::TrueLayer::Payment->new(
         $response->%*,
         host => $self->host,
+        payment_host => $self->payment_host,
     );
 }
 

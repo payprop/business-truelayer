@@ -11,6 +11,7 @@ isa_ok(
         client_id => 'TL-CLIENT-ID',
         client_secret => 'super-secret-client-secret',
         host => '/dev/null',
+        payment_host => '/dev/random',
     ),
     'Business::TrueLayer'
 );
@@ -66,8 +67,45 @@ subtest '->create_payment' => sub {
         };
     };
 
-    # taken from https://docs.truelayer.com/docs/create-a-payment
-    my $args = {
+    my $args = _payment_args();
+
+    isa_ok(
+        my $Payment = $TrueLayer->create_payment( $args ),
+        'Business::TrueLayer::Payment',
+    );
+
+    is( $Payment->id,'SOMEID','payment->id' );
+    is( $Payment->status,'authorization_required','payment->status' );
+    is( $Payment->resource_token,'a-secret-token','payment->resource_token' );
+    is( $Payment->user->id,'ABABAB-CDCDCD-EFEFEF-GHGHGH','payment->user->id' );
+    is( $Payment->host,'/dev/null','->host passed to Payment object' );
+    is( $Payment->payment_host,'/dev/random','->payment_host passed to Payment object' );
+};
+
+subtest '->get_payment' => sub {
+
+    no warnings qw/ once redefine /;
+    *Business::TrueLayer::Request::api_get = sub {
+        return _payment_args();
+    };
+
+    isa_ok(
+        my $Payment = $TrueLayer->get_payment( 'SOMEID' ),
+        'Business::TrueLayer::Payment',
+    );
+
+    is( $Payment->id,'SOMEID','payment->id' );
+    is( $Payment->status,'authorization_required','payment->status' );
+    is( $Payment->resource_token,'a-secret-token','payment->resource_token' );
+    is( $Payment->user->id,'ABABAB-CDCDCD-EFEFEF-GHGHGH','payment->user->id' );
+    is( $Payment->host,'/dev/null','->host passed to Payment object' );
+    is( $Payment->payment_host,'/dev/random','->payment_host passed to Payment object' );
+};
+
+# taken from https://docs.truelayer.com/docs/create-a-payment
+sub _payment_args {
+    return {
+        "id" => "SOMEID",
         "currency"       => "GBP",
         "payment_method" => {
             "type"               => "bank_transfer",
@@ -92,24 +130,16 @@ subtest '->create_payment' => sub {
             }
         },
         "user" => {
-            "id"            => "f9b48c9d-176b-46dd-b2da-fe1a2b77350c",
+            "id"            => "ABABAB-CDCDCD-EFEFEF-GHGHGH",
             "name"          => "Remi Terr",
             "email"         => 'remi.terr@aol.com',
             "phone"         => "+447777777777",
             "date_of_birth" => "1990-01-31"
         },
-        "amount_in_minor" => 1
+        "amount_in_minor" => 1,
+        "resource_token" => "a-secret-token",
+        "status" => "authorization_required"
     };
-
-    isa_ok(
-        my $Payment = $TrueLayer->create_payment( $args ),
-        'Business::TrueLayer::Payment',
-    );
-
-    is( $Payment->id,'SOMEID','payment->id' );
-    is( $Payment->status,'authorization_required','payment->status' );
-    is( $Payment->resource_token,'a-secret-token','payment->resource_token' );
-    is( $Payment->user->id,'ABABAB-CDCDCD-EFEFEF-GHGHGH','payment->user->id' );
-};
+}
 
 done_testing();

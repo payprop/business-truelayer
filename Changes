@@ -1,4 +1,8 @@
 Revision history for Business-TrueLayer
 
+0.02     2023-12-01
+        - Pass ->payment_host into ::Payment object
+        - Add Changes and README.pod
+
 0.01     2023-11-29
         - First release
