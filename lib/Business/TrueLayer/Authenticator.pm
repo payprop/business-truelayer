@@ -21,7 +21,7 @@ use Business::TrueLayer::Types;
 
 use Try::Tiny::SmartCatch;
 use Mojo::UserAgent;
-use Carp qw/ confess /;
+use Carp qw/ croak /;
 use JSON;
 
 has [ qw/ auth_host / ] => (
@@ -70,8 +70,9 @@ sub _authenticate ( $self ) {
         return $self;
     }
 
+    my $url = "https://" . $self->auth_host . "/connect/token";
     my $res = $self->_ua->post(
-        "https://@{[ $self->auth_host ]}/connect/token"
+        $url,
         => {
             'Accept'       => 'application/json',
             'Content-Type' => 'application/json',
@@ -84,29 +85,78 @@ sub _authenticate ( $self ) {
         }
     )->result;
 
+    my $type = $res->headers->content_type;
+    my $code = $res->code;
+
+    croak( "TrueLayer POST $url returned $code with no MIME type" )
+        unless defined $type;
+    croak( "TrueLayer POST $url returned $code $type not JSON, status line: "
+               . $res->message)
+        unless $type =~ m!\Aapplication/(?:problem\+)?JSON\b!i;
+
+    my $body = $res->body;
+
+    croak( "TrueLayer POST $url returned $code with an empty body" )
+        unless length $body;
+
     my $res_content = try sub {
-        JSON->new->canonical->decode( $res->body );
+        JSON->new->canonical->decode( $body );
     },
     catch_default sub {
-        confess( "TrueLayer response malformed: $res" );
+        croak( "TrueLayer POST $url returned $code with malformed JSON length @{[ length $body ]}: $_" );
     };
+    croak( "TrueLayer POST $url returned $code JSON $res_content" )
+                 unless ref $res_content eq 'HASH';
 
-    # Check for errors
-    if ( $res_content->{error} ) {
-        confess(
-            "TrueLayer error while authenticating: "
-            . $res_content->{error} . ", description \""
-            . $res_content->{error_description} . "\""
-            . "Full error JSON: " . $res->body
-        );
+    unless( $res->is_success ) {
+        my $title = $res_content->{title};
+        if ( length $title ) {
+            # This is looking like an error format we expect:
+            # https://docs.truelayer.com/docs/payments-api-errors
+            my $detail = $res_content->{detail};
+            my $message = defined $detail ? "$title - $detail" : $title;
+
+            croak( "TrueLayer POST $url returned $code: $message" );
+        }
+
+        my $error = $res_content->{error};
+        if ( length $error ) {
+            # This is looking like the error format for the Access tokens
+            # and the Data API
+            # https://docs.truelayer.com/reference/generateaccesstoken
+            my $detail = $res_content->{error_description};
+            my $message = defined $detail ? "'$error' - $detail" : "'$error'";
+            # There's no : in this message so that we distinguish it from the
+            # message generated for the croak above.
+            # (ie we can tell which format the API is actually responding
+            # with, whatever the docs might claim)
+            croak( "TrueLayer POST $url returned $code $message" );
+        }
+
+        # This is not in spec:
+        croak( "TrueLayer POST $url returned $code with JSON keys "
+                   . join( ', ', map { "'$_'" } sort keys %$res_content )
+                   . ' and status line: '  . $res->message);
     }
 
-    $self->_auth_token($res_content->{access_token});
-    $self->_expires_at(time + $res_content->{expires_in});
-    $self->_token_type($res_content->{token_type});
-
-    $self->_refresh_token($res_content->{refresh_token})
-        if $res_content->{refresh_token};
+    # If any of these are missing, we get "interesting" errors from Moose
+    # constraint violations.
+    for my $key ( qw/ access_token expires_in token_type refresh_token / ) {
+        my $val = $res_content->{ $key };
+        if ( !length $val ) {
+            # refresh_token is optional
+            next
+                if $key eq 'refresh_token';
+            croak( "TrueLayer POST $url missing key $key - we have "
+                       . join( ', ', map { "'$_'" } sort keys %$res_content ) );
+        }
+        if( $key eq 'expires_in' ) {
+            $self->_expires_at(time + $val);
+        } else {
+            my $method = $key eq 'access_token' ? '_auth_token' : "_$key";
+            $self->$method( $val );
+        }
+    }
 
     return $self;
 }
