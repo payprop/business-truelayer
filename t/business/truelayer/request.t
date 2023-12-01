@@ -6,7 +6,7 @@ use warnings;
 use FindBin qw/ $Bin /;
 use Test::MockObject;
 use Test::Most;
-use Test::Exception;
+use Test::Warnings;
 
 use_ok( 'Business::TrueLayer::Request' );
 isa_ok(

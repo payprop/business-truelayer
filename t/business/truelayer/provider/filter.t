@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Warnings;
 
 use_ok( 'Business::TrueLayer::Provider::Filter' );
 
