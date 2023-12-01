@@ -7,7 +7,7 @@ use feature qw/ signatures postderef /;
 use Test::Most;
 use Test::Warnings;
 use Test::MockObject;
-use JSON qw/ encode_json /;
+use JSON qw/ decode_json encode_json /;
 no warnings qw/ experimental::signatures experimental::postderef /;
 
 use_ok( 'Business::TrueLayer::Authenticator' );
@@ -184,13 +184,14 @@ for my $testcase ( @testcases ) {
 }
 
 $ua->mock(
-    post => sub($self, $url, $headers, $generator, $body) {
+    build_tx => sub($self, $method, $url, $headers, $body) {
         # We aren't going to get unique diagnostics on this, but likely in the
         # context of the verbose test output it will help with the problems
-        is( $generator, 'json', 'mocked UA called correctly' );
+        is( $method, 'POST', 'mocked UA called correctly' );
         # This is a bit of a hack, but we know that we can control this value
         # from our constructor, so we can cheat and use it to choose our poison:
-        my $name = $body->{scope};
+        my $json = decode_json( $body );
+        my $name = $json->{scope};
         my $results = $responses{$name};
         # This isn't going to end well. This test script is borked.
         # BAIL_OUT seems a bit overkill, but this script should abort right now:
@@ -215,6 +216,7 @@ $ua->mock(
         return $response;
     }
 );
+$ua->mock( start => sub($self, $tx) { return $tx } );
 
 isa_ok(
     $Authenticator->_authenticate,

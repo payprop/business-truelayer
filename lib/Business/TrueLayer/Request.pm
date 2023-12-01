@@ -22,7 +22,7 @@ use Business::TrueLayer::Signer;
 
 use Try::Tiny::SmartCatch;
 use Mojo::UserAgent;
-use Carp qw/ confess /;
+use Carp qw/ croak confess /;
 use JSON;
 use Data::GUID;
 
@@ -150,6 +150,113 @@ sub api_post (
     )->result;
 
     return $self->_process_response( $res );
+}
+
+sub _ua_request (
+    $self,
+    $url,
+    $body,
+    $headers = undef,
+    $method = 'POST',
+    $expect_json = 1
+) {
+
+    my $ua = $self->_ua;
+    my $res = $ua->start($ua->build_tx(
+        $method,
+        $url,
+        {
+            'Accept'        => 'application/json; charset=UTF-8',
+            'Content-Type'  => 'application/json; charset=UTF-8',
+            @{ $headers // [] },
+        },
+        # Mojo::UserAgent::Transactor::tx calls $self->generators and then the
+        # callbacks based on the count of @_, and does not expect undef here
+        (defined $body ? ($body) : ()),
+    ))->result;
+
+    return $self->_process_response_new( $res, $url, $method, $expect_json );
+}
+
+sub _process_response_new (
+    $self,
+    $res,
+    $url,
+    $method,
+    $expect_json
+) {
+    # Easiest to deal with this first, even though it should be very rare:
+    if ( $res->code == 301 ) {
+        # possibly a redirect loop
+        croak( "TrueLayer $method $url failed > $MAX_REDIRECTS levels of redirect" );
+    }
+
+    if ( !$expect_json && !$res->is_success ) {
+        # All error responses are documented as returning JSON
+        $expect_json = 1;
+    }
+
+    my $type = $res->headers->content_type;
+    my $code = $res->code;
+
+    croak( "TrueLayer $method $url returned $code with no MIME type" )
+        unless defined $type;
+
+    my $body = $res->body;
+
+    return $body
+        if !$expect_json && $res->is_success;
+
+    # Either 2xx and expecting JSON, or an error response
+
+    croak( "TrueLayer $method $url returned $code $type not JSON, status line: "
+               . $res->message)
+        unless $type =~ m!\Aapplication/(?:problem\+)?JSON\b!i;
+
+    croak( "TrueLayer $method $url returned $code with an empty body" )
+        unless length $body;
+
+    my $res_content = try sub {
+        JSON->new->canonical->decode( $body );
+    },
+    catch_default sub {
+            croak( "TrueLayer $method $url returned $code with malformed JSON length @{[ length $body ]}: $_" );
+    };
+    croak( "TrueLayer $method $url returned $code JSON $res_content" )
+        unless ref $res_content eq 'HASH';
+
+   return $res_content
+        if $res->is_success;
+
+    # From here onward, it's all error handling, as best we can:
+    my $title = $res_content->{title};
+    if ( length $title ) {
+        # This is looking like an error format we expect:
+        # https://docs.truelayer.com/docs/payments-api-errors
+        my $detail = $res_content->{detail};
+        my $message = defined $detail ? "$title - $detail" : $title;
+
+        croak( "TrueLayer $method $url returned $code: $message" );
+    }
+
+    my $error = $res_content->{error};
+    if ( length $error ) {
+        # This is looking like the error format for the Access tokens
+        # and the Data API
+        # https://docs.truelayer.com/reference/generateaccesstoken
+        my $detail = $res_content->{error_description};
+        my $message = defined $detail ? "'$error' - $detail" : "'$error'";
+        # There's no : in this message so that we distinguish it from the
+        # message generated for the croak above.
+        # (ie we can tell which format the API is actually responding
+        # with, whatever the docs might claim)
+        croak( "TrueLayer $method $url returned $code $message" );
+    }
+
+    # This is not in spec:
+    croak( "TrueLayer $method $url returned $code with JSON keys "
+               . join( ', ', map { "'$_'" } sort keys %$res_content )
+               . ' and status line: '  . $res->message);
 }
 
 sub _process_response (
