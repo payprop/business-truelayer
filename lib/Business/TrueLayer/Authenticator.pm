@@ -24,14 +24,6 @@ use Mojo::UserAgent;
 use Carp qw/ croak /;
 use JSON;
 
-has [ qw/ auth_host / ] => (
-    is        => 'ro',
-    isa       => 'Str',
-    required  => 0,
-    lazy      => 1,
-    default   => sub { "auth." . shift->host },
-);
-
 has 'scope' => (
     is        => 'rw',
     isa       => 'ArrayRef',
@@ -70,7 +62,7 @@ sub _authenticate ( $self ) {
         return $self;
     }
 
-    my $url = "https://" . $self->auth_host . "/connect/token";
+    my $url = "https://" . $self->host . "/connect/token";
     my $json = JSON->new->utf8->canonical->encode(
         {
             grant_type    => 'client_credentials',

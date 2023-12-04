@@ -53,6 +53,16 @@ has api_host => (
     }
 );
 
+has auth_host => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    lazy      => 1,
+    default   => sub ( $self ) {
+        return join( '.','auth',$self->host );
+    }
+);
+
 has payment_host => (
     is        => 'ro',
     isa       => 'Str',
@@ -93,7 +103,7 @@ has 'authenticator' => (
         Business::TrueLayer::Authenticator->new(
             client_id     => $self->client_id,
             client_secret => $self->client_secret,
-            host          => $self->host,
+            host          => $self->auth_host,
             _ua           => $self->_ua,
         );
     },
