@@ -22,7 +22,7 @@ use Business::TrueLayer::Signer;
 
 use Try::Tiny::SmartCatch;
 use Mojo::UserAgent;
-use Carp qw/ croak confess /;
+use Carp qw/ croak /;
 use JSON;
 use Data::GUID;
 
@@ -120,6 +120,7 @@ sub api_post (
     $self,
     $absolute_path,
     $http_request_body = undef,
+    $expect_json = 1,
 ) {
     # sign the request
     my $idempotency_key = $self->idempotency_key;
@@ -135,21 +136,17 @@ sub api_post (
         $json,
     );
 
-    # POST the request
-    my $res = $self->_ua->post(
-        "https://@{[ $self->api_host ]}$absolute_path",
-        => {
-            'Authorization' => "Bearer "
-                . $self->authenticator->access_token,
-            'Tl-Signature'    => $jws,
+    return $self->_ua_request(
+        "https://" . $self->api_host . $absolute_path,
+        $json,
+        [
+            'Authorization' => "Bearer " . $self->authenticator->access_token,
+            'Tl-Signature'  => $jws,
             'Idempotency-Key' => $idempotency_key,
-            'Accept'        => 'application/json; charset=UTF-8',
-            'Content-Type'  => 'application/json; charset=UTF-8',
-        }
-        => $json
-    )->result;
-
-    return $self->_process_response( $res );
+        ],
+        'POST',
+        $expect_json
+    );
 }
 
 sub _ua_request (
@@ -175,16 +172,6 @@ sub _ua_request (
         (defined $body ? ($body) : ()),
     ))->result;
 
-    return $self->_process_response_new( $res, $url, $method, $expect_json );
-}
-
-sub _process_response_new (
-    $self,
-    $res,
-    $url,
-    $method,
-    $expect_json
-) {
     # Easiest to deal with this first, even though it should be very rare:
     if ( $res->code == 301 ) {
         # possibly a redirect loop
@@ -202,7 +189,7 @@ sub _process_response_new (
     croak( "TrueLayer $method $url returned $code with no MIME type" )
         unless defined $type;
 
-    my $body = $res->body;
+    $body = $res->body;
 
     return $body
         if !$expect_json && $res->is_success;
@@ -259,45 +246,21 @@ sub _process_response_new (
                . ' and status line: '  . $res->message);
 }
 
-sub _process_response (
-    $self,
-    $res
-) {
-    if ( $res->is_success ) {
-
-        # we don't always have a response body
-        if ( $res->body ) {
-            return JSON->new->canonical->decode( $res->body );
-        }
-
-        return;
-
-    } elsif ( $res->is_error ) {
-        confess( "API POST failed: " . $res->message );
-    } elsif ( $res->code == 301 ) {
-        # possibly a redirect loop
-        confess( "API POST failed > $MAX_REDIRECTS levels of redirect" );
-    }
-
-    confess( "API POST failed, unknown reason" );
-}
-
 sub api_get (
     $self,
     $absolute_path,
+    $expect_json = 1
 ) {
     # GET requests don't need to be signed or require an Idempotency-Key
-    my $res = $self->_ua->get(
-        "https://@{[ $self->api_host ]}$absolute_path",
-        => {
-            'Authorization' => "Bearer "
-                . $self->authenticator->access_token,
-            'Accept'        => 'application/json',
-            'Content-Type'  => 'application/json',
-        }
-    )->result;
-
-    return $self->_process_response( $res );
+    return $self->_ua_request(
+        "https://" . $self->api_host . $absolute_path,
+        undef,
+        [
+            'Authorization' => "Bearer " . $self->authenticator->access_token,
+        ],
+        'GET',
+        $expect_json
+    );
 }
 
 1;

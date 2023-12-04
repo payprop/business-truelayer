@@ -43,37 +43,42 @@ my %status = (
     code => 200,
 );
 
-for my $method ( qw( post get ) ) {
-    $ua->mock( $method => sub($self, $url, $headers, @ ) {
-        is( ref $headers, 'HASH', 'headers are a hashdef' );
-        # Yes, strictly these are case insenstive. This test is good enough:
-        like( $headers->{Authorization}, qr/\ABearer /, 'Authorisation header' );
-        if( $method eq 'post' ) {
-            is( $headers->{'Tl-Signature'}, 'A..B', 'JWT in Tl-Signature' );
-            isnt( $headers->{'Idempotency-Key'}, undef, 'Idempotency Key' );
-        }
+$ua->mock( build_tx => sub($self, $method, $url, $headers, @ ) {
+    is( ref $headers, 'HASH', 'headers are a hashdef' );
+    # Yes, strictly these are case insenstive. This test is good enough:
+    like( $headers->{Authorization}, qr/\ABearer /, 'Authorisation header' );
+    if( $method eq 'POST' ) {
+        is( $headers->{'Tl-Signature'}, 'A..B', 'JWT in Tl-Signature' );
+        isnt( $headers->{'Idempotency-Key'}, undef, 'Idempotency Key' );
+    }
 
-        my $response = Test::MockObject->new();
-        $response->mock(
-            result => sub {
-                my $result = Test::MockObject->new();
+    my $response = Test::MockObject->new();
+    $response->mock(
+        result => sub {
+            my $result = Test::MockObject->new();
 
-                $result->mock( is_success => sub($self) {
-                                   $self->code =~ /\A2/;
-                               } );
-                $result->mock( is_error => sub($self) {
-                                   $self->code =~ /\A[45]/;
-                               } );
-                $result->set_always( body => $method eq 'post' ? '{"p":{}}' : '{"g":[]}' );
-                # This can actually override the previous "defaults"
-                while ( my ($method, $return) = each %status ) {
-                    $result->set_always( $method, $return );
-                }
+            $result->mock( is_success => sub($self) {
+                               $self->code =~ /\A2/;
+                           } );
+            $result->mock( is_error => sub($self) {
+                               $self->code =~ /\A[45]/;
+                           } );
+            $result->set_always(
+                body => $method eq 'POST' ? '{"p":{}}' : '{"g":[]}'
+            );
+            my $headers = Test::MockObject->new();
+            $headers->set_always( content_type => 'application/json' );
+            $headers->set_always( location => 'behind the sofa' );
+            $result->set_always( headers => $headers );
+            # This can actually override the previous "defaults"
+            while ( my ($method, $return) = each %status ) {
+                $result->set_always( $method, $return );
+            }
 
-                return $result;
-            } );
-    });
-}
+            return $result;
+        } );
+});
+$ua->mock( start => sub($self, $tx) { return $tx } );
 
 lives_ok(
     sub {
@@ -87,6 +92,16 @@ lives_ok(
     },
     '->api_get',
 );
+lives_ok(
+    sub {
+        %status = (
+            code => 200,
+            body => ' [ {}, {} ] '
+        );
+        cmp_deeply( $Request->api_get( '/foo', 0 ), ' [ {}, {} ] ', 'get result' );
+    },
+    '->api_get, not JSON',
+);
 
 subtest 'failures' => sub {
     %status = (
@@ -96,16 +111,13 @@ subtest 'failures' => sub {
 
     throws_ok(
         sub { $Request->api_post( '/foo',{} ) },
-        qr/API POST failed: error message/,
+        qr/TrueLayer POST .* returned 400 with JSON keys 'p' and status line: error message/,
     );
 
-    {
-        local $TODO = 'GET failures reported as POST';
     throws_ok(
         sub { $Request->api_get( '/foo', ) },
-        qr/API GET failed: error message/,
+        qr/TrueLayer GET .* returned 400 with JSON keys 'g' and status line: error message/,
     );
-    }
 
     %status = (
         code => 301,
@@ -113,16 +125,18 @@ subtest 'failures' => sub {
 
     throws_ok(
         sub { $Request->api_post( '/foo',{} ) },
-        qr/API POST failed > 5 levels of redirect/,
+        qr/\ATrueLayer POST .* failed > 5 levels of redirect /,
     );
 
     %status = (
         code => 0,
+        message => "nothing of value",
+        body => '{"error":"out of cheese"}',
     );
 
     throws_ok(
         sub { $Request->api_post( '/foo',{} ) },
-        qr/API POST failed, unknown reason/,
+        qr/TrueLayer POST .* returned 0 'out of cheese' /,
     );
 };
 
