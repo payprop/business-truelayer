@@ -193,9 +193,12 @@ sub _ua_request (
         $expect_json = 1;
     }
 
-    my $type = $res->headers->content_type;
     my $code = $res->code;
 
+    # no content
+    return if $code == '204';
+
+    my $type = $res->headers->content_type;
     croak( "TrueLayer $method $url returned $code with no MIME type" )
         unless defined $type;
 

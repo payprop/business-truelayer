@@ -90,6 +90,7 @@ sub test_signature ( $self ) {
     $self->api_post(
         '/test-signature',
         { nonce => "9f952b2e-1675-4be8-bb39-6f4343803c2f" },
+        my $expect_json = 0,
     );
 
     return 1;

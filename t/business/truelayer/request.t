@@ -103,6 +103,17 @@ lives_ok(
     '->api_get, not JSON',
 );
 
+lives_ok(
+    sub {
+        %status = (
+            code => 204,
+            body => undef,
+        );
+        $Request->api_post( '/foo',{} );
+    },
+    '->api_post, no content',
+);
+
 subtest 'failures' => sub {
     %status = (
         code => 400,
