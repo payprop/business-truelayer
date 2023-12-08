@@ -7,6 +7,7 @@ use FindBin qw/ $Bin /;
 use lib $Bin;
 
 use Test::Most;
+use Test::Warnings;
 use Test::Credentials;
 use Business::TrueLayer;
 

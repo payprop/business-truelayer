@@ -21,16 +21,8 @@ use Business::TrueLayer::Types;
 
 use Try::Tiny::SmartCatch;
 use Mojo::UserAgent;
-use Carp qw/ confess /;
+use Carp qw/ croak /;
 use JSON;
-
-has [ qw/ auth_host / ] => (
-    is        => 'ro',
-    isa       => 'Str',
-    required  => 0,
-    lazy      => 1,
-    default   => sub { "auth." . shift->host },
-);
 
 has 'scope' => (
     is        => 'rw',
@@ -70,43 +62,36 @@ sub _authenticate ( $self ) {
         return $self;
     }
 
-    my $res = $self->_ua->post(
-        "https://@{[ $self->auth_host ]}/connect/token"
-        => {
-            'Accept'       => 'application/json',
-            'Content-Type' => 'application/json',
-        },
-        => json => {
+    my $url = "https://" . $self->host . "/connect/token";
+    my $json = JSON->new->utf8->canonical->encode(
+        {
             grant_type    => 'client_credentials',
             client_id     => $self->client_id,
             client_secret => $self->client_secret,
             scope         => join( " ",$self->scope->@* ),
         }
-    )->result;
+    );
 
-    my $res_content = try sub {
-        JSON->new->canonical->decode( $res->body );
-    },
-    catch_default sub {
-        confess( "TrueLayer response malformed: $res" );
-    };
+    my $res_content = $self->_ua_request( $url, $json );
 
-    # Check for errors
-    if ( $res_content->{error} ) {
-        confess(
-            "TrueLayer error while authenticating: "
-            . $res_content->{error} . ", description \""
-            . $res_content->{error_description} . "\""
-            . "Full error JSON: " . $res->body
-        );
+    # If any of these are missing, we get "interesting" errors from Moose
+    # constraint violations.
+    for my $key ( qw/ access_token expires_in token_type refresh_token / ) {
+        my $val = $res_content->{ $key };
+        if ( !length $val ) {
+            # refresh_token is optional
+            next
+                if $key eq 'refresh_token';
+            croak( "TrueLayer POST $url missing key $key - we have "
+                       . join( ', ', map { "'$_'" } sort keys %$res_content ) );
+        }
+        if( $key eq 'expires_in' ) {
+            $self->_expires_at(time + $val);
+        } else {
+            my $method = $key eq 'access_token' ? '_auth_token' : "_$key";
+            $self->$method( $val );
+        }
     }
-
-    $self->_auth_token($res_content->{access_token});
-    $self->_expires_at(time + $res_content->{expires_in});
-    $self->_token_type($res_content->{token_type});
-
-    $self->_refresh_token($res_content->{refresh_token})
-        if $res_content->{refresh_token};
 
     return $self;
 }

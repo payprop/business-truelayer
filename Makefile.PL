@@ -29,7 +29,7 @@ WriteMakefile(
     BUILD_REQUIRES => {
         'Test::Most'       => '0.33',
         'Test::MockObject' => '1.20140408',
-        'Test::Exception'  => '0.32',
+        'Test::Warnings'   => '0.014',
     },
     META_MERGE => {
         resources => {

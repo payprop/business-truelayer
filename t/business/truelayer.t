@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Warnings;
 
 use_ok( 'Business::TrueLayer' );
 isa_ok(
@@ -24,7 +25,7 @@ isa_ok(
 subtest '->merchant_accounts' => sub {
 
     no warnings qw/ once redefine /;
-    *Business::TrueLayer::Request::api_get = sub {
+    local *Business::TrueLayer::Request::api_get = sub {
         return {
             items => [ {
                 'id' => '5b7adbf4-f289-48a7-b451-bc236443397c',
@@ -56,7 +57,7 @@ subtest '->merchant_accounts' => sub {
 subtest '->create_payment' => sub {
 
     no warnings qw/ once redefine /;
-    *Business::TrueLayer::Request::api_post = sub {
+    local *Business::TrueLayer::Request::api_post = sub {
         return {
             "id" => "SOMEID",
             "user" => {
@@ -141,5 +142,16 @@ sub _payment_args {
         "status" => "authorization_required"
     };
 }
+
+subtest '->test_signature' => sub {
+
+    # "no content"
+    no warnings qw/ once redefine /;
+    local *Business::TrueLayer::Request::api_post = sub {
+        return;
+    };
+
+    ok( $TrueLayer->test_signature,'->test_signature' );
+};
 
 done_testing();
