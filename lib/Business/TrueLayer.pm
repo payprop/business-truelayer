@@ -225,6 +225,20 @@ L<Business::TrueLayer::MerchantAccount>
 
 L<Business::TrueLayer::Payment>
 
+=head1 AUTHORS
+
+Lee Johnson - C<leejo@cpan.org>
+
+Nicholas Clark
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself. If you would like to contribute documentation,
+features, bug fixes, or anything else then please raise an issue / pull request:
+
+    https://github.com/Humanstate/business-truelayer
+
 =cut
 
 # vim: ts=4:sw=4:et

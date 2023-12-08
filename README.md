@@ -107,3 +107,17 @@ Any issues here will result in an exception being thrown.
 [Business::TrueLayer::MerchantAccount](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3AMerchantAccount)
 
 [Business::TrueLayer::Payment](https://metacpan.org/pod/Business%3A%3ATrueLayer%3A%3APayment)
+
+# AUTHORS
+
+Lee Johnson - `leejo@cpan.org`
+
+Nicholas Clark
+
+# LICENSE
+
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself. If you would like to contribute documentation,
+features, bug fixes, or anything else then please raise an issue / pull request:
+
+    https://github.com/Humanstate/business-truelayer
