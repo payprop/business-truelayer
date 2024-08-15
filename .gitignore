@@ -16,3 +16,5 @@ ec512-public-key.pem
 cover_db
 *.html
 .DS_Store
+test.json
+debug.txt

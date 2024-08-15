@@ -22,7 +22,7 @@ use MooseX::Aliases;
 use Moose::Util::TypeConstraints;
 no warnings qw/ experimental::signatures experimental::postderef /;
 
-use Business::TrueLayer::Beneficiary;
+with 'Business::TrueLayer::Types::Beneficiary';
 use Business::TrueLayer::Provider;
 
 use namespace::autoclean;
@@ -48,20 +48,6 @@ A L<Business::TrueLayer::Provider> object. Hash refs will be coerced.
 has [ qw/ type / ] => (
     is       => 'ro',
     isa      => 'Str',
-    required => 1,
-);
-
-coerce 'Business::TrueLayer::Beneficiary'
-    => from 'HashRef'
-    => via {
-        Business::TrueLayer::Beneficiary->new( %{ $_ } );
-    }
-;
-
-has beneficiary => (
-    is       => 'ro',
-    isa      => 'Business::TrueLayer::Beneficiary',
-    coerce   => 1,
     required => 1,
 );
 

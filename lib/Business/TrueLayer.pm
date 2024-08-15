@@ -64,8 +64,11 @@ use Moose;
 extends 'Business::TrueLayer::Request';
 no warnings qw/ experimental::signatures experimental::postderef /;
 
+use namespace::autoclean;
+
 use Business::TrueLayer::Authenticator;
 use Business::TrueLayer::MerchantAccount;
+use Business::TrueLayer::Mandate;
 use Business::TrueLayer::Payment;
 use Business::TrueLayer::Signer;
 use Business::TrueLayer::Types;
@@ -217,6 +220,82 @@ sub get_payment (
     );
 }
 
+=head2 create_mandate
+
+Instantiates a L<Business::TrueLayer::Mandate> object then calls the
+API to create it - will return the object to allow you to inspect it
+and call methods on it.
+
+    my $Payment = $TrueLayer->create_mandate( $args );
+
+C<$args> should be a hash reference of the necessary attributes to
+instantiate a L<Business::TrueLayer::Mandate> object - see the perldoc
+for that class for the attributes required.
+
+Any issues here will result in an exception being thrown.
+
+=cut
+
+sub create_mandate (
+    $self,
+    $mandate_constuctor_args,
+) {
+    # instantiate an object first to perform type checking before
+    # we send a request to the API
+    Business::TrueLayer::Mandate->new(
+        $mandate_constuctor_args,
+    );
+
+    # send request to the API
+    my $response = $self->api_post(
+        '/v3/mandates',
+        $mandate_constuctor_args,
+    );
+
+    # return a new instance of the Payment object, with the original
+    # args and the details from the response
+    return Business::TrueLayer::Mandate->new({
+        $mandate_constuctor_args->%*,
+
+        $response->%{ qw / id status / },
+
+        host => $self->host,
+        payment_host => $self->payment_host,
+
+        user => Business::TrueLayer::User->new(
+            $mandate_constuctor_args->{user}->%*,
+            id => $response->{user}{id},
+        ),
+    });
+}
+
+=head2 get_mandate
+
+Calls the API to get the details for a mandate for the given id then
+instantiates a L<Business::TrueLayer::Mandate> object for return to
+the caller
+
+    my $Mandate = $TrueLayer->get_mandate( $mandate_id );
+
+Any issues here will result in an exception being thrown.
+
+=cut
+
+sub get_mandate (
+    $self,
+    $mandate_id,
+) {
+    # send request to the API
+    my $response = $self->api_get(
+        '/v3/mandates/' . $mandate_id,
+    );
+
+    return Business::TrueLayer::Mandate->new({
+        $response->%*,
+        host => $self->host,
+        payment_host => $self->payment_host,
+    });
+}
 1;
 
 =head1 SEE ALSO
