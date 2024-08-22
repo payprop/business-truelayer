@@ -36,8 +36,6 @@ use namespace::autoclean;
 
 =item status (Str)
 
-=item resource_token (Str)
-
 =item type (Str)
 
 =item beneficiary

@@ -57,4 +57,9 @@ $Mandate = $TrueLayer->get_mandate( $Mandate->id );
 is( $Mandate->status,'authorizing','->get_mandate' );
 ok( $Mandate->authorizing,'->authorizing' );
 
+if ( $Mandate->authorized ) {
+	my $Payment = $TrueLayer->create_payment_from_mandate( $Mandate,100 );
+	isa_ok( $Payment,'Business::TrueLayer::Payment' );
+}
+
 done_testing();

@@ -16,6 +16,8 @@ lib/Business/TrueLayer/Remitter.pm
 lib/Business/TrueLayer/Request.pm
 lib/Business/TrueLayer/Signer.pm
 lib/Business/TrueLayer/Types.pm
+lib/Business/TrueLayer/Types/Beneficiary.pm
+lib/Business/TrueLayer/Types/User.pm
 lib/Business/TrueLayer/User.pm
 Makefile.PL
 MANIFEST
@@ -23,6 +25,7 @@ README.md
 README.pod
 t/business/truelayer.t
 t/business/truelayer/account/identifier.t
+t/business/truelayer/address.t
 t/business/truelayer/authenticator.t
 t/business/truelayer/beneficiary.t
 t/business/truelayer/mandate.t
@@ -32,6 +35,7 @@ t/business/truelayer/payment.t
 t/business/truelayer/payment/method.t
 t/business/truelayer/provider/filter.t
 t/business/truelayer/provider/scheme.t
+t/business/truelayer/remitter.t
 t/business/truelayer/request.t
 t/business/truelayer/signer.t
 t/business/truelayer/user.t

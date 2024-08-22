@@ -7,7 +7,7 @@ Business::TrueLayer - Perl library for interacting with the TrueLayer v3 API
 
 =head1 VERSION
 
-v0.02
+v0.03
 
 =head1 SYNOPSIS
 
@@ -38,6 +38,15 @@ v0.02
 
     if ( $Payment->settled ) {
         ...
+    }
+
+    # create a mandate, then create a payment
+    my $Mandate = $TrueLayer->create_mandate( $args );
+
+    if ( $Mandate->authorized ) {
+        my $Payment = $TrueLayer->create_payment_from_mandate(
+            $Mandate,$amount_in_minor_units
+        );
     }
 
 =head1 DESCRIPTION
@@ -74,7 +83,7 @@ use Business::TrueLayer::Signer;
 use Business::TrueLayer::Types;
 use Business::TrueLayer::User;
 
-$Business::TrueLayer::VERSION = '0.02';
+$Business::TrueLayer::VERSION = '0.03';
 
 =head1 METHODS
 
@@ -226,7 +235,7 @@ Instantiates a L<Business::TrueLayer::Mandate> object then calls the
 API to create it - will return the object to allow you to inspect it
 and call methods on it.
 
-    my $Payment = $TrueLayer->create_mandate( $args );
+    my $Mandate = $TrueLayer->create_mandate( $args );
 
 C<$args> should be a hash reference of the necessary attributes to
 instantiate a L<Business::TrueLayer::Mandate> object - see the perldoc
@@ -296,6 +305,57 @@ sub get_mandate (
         payment_host => $self->payment_host,
     });
 }
+
+=head2 create_payment_from_mandate
+
+Returns a L<Business::TrueLayer::Payment> object after having called
+the TrueLayer API for a particular mandate
+
+    my $Payment = $TrueLayer->create_payment_from_mandate(
+        $Mandate,
+        $amount_in_minor_units,
+    );
+
+C<$Mandate> should be a Business::TrueLayer::Mandate object, and
+C<$amount_in_minor_units> should be exactly that.
+
+Any issues here will result in an exception being thrown.
+
+=cut
+
+sub create_payment_from_mandate (
+    $self,
+    $Mandate,
+    $amount_in_minor_units,
+) {
+    my %request = (
+        payment_method => {
+            type => 'mandate',
+            mandate_id   => $Mandate->id,
+        },
+        amount_in_minor => $amount_in_minor_units,
+        currency => $Mandate->currency,
+        user => { $Mandate->user->%* },
+    );
+
+    my $response = $self->api_post(
+        '/v3/payments',
+        \%request,
+    );
+
+    return Business::TrueLayer::Payment->new(
+        $response->%{ qw / id status /},
+        %request,
+
+        host => $self->host,
+        payment_host => $self->payment_host,
+        user => Business::TrueLayer::User->new(
+            $request{user}->%*,
+            id => $response->{user}{id},
+        ),
+    );
+}
+
 1;
 
 =head1 SEE ALSO

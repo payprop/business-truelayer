@@ -199,6 +199,27 @@ subtest '->get_mandate' => sub {
     is( $Mandate->user->id,'ABABAB-CDCDCD-EFEFEF-GHGHGH','mandate->user->id' );
     is( $Mandate->host,'/dev/null','->host passed to Mandate object' );
     is( $Mandate->payment_host,'/dev/random','->payment_host passed to Mandate object' );
+
+	subtest '->create_payment_from_mandate' => sub {
+
+		local *Business::TrueLayer::Request::api_post = sub {
+			return {
+				"id" => "be6db706-68f1-4e9c-ab09-b83d8e3ea60d",
+				"user" => {
+					"id" => "b8d4dda0-ff2c-4d77-a6da-4615e4bad941"
+				},
+				"status" => "authorized",
+			};
+		};
+
+		isa_ok(
+			my $Payment = $TrueLayer->create_payment_from_mandate( $Mandate,100 ),
+			'Business::TrueLayer::Payment',
+			'->create_payment_from_mandate'
+		);
+
+		ok( $Payment->authorized,'->authorized' );
+	};
 };
 
 # taken from https://docs.truelayer.com/docs/create-mandate
