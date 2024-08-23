@@ -38,8 +38,8 @@ WriteMakefile(
         resources => {
             license    => 'http://dev.perl.org/licenses/',
             homepage   => 'https://metacpan.org/module/Business::TrueLayer',
-            bugtracker => 'https://github.com/Humanstate/business-truelayer/issues',
-            repository => 'https://github.com/Humanstate/business-truelayer'
+            bugtracker => 'https://github.com/payprop/business-truelayer/issues',
+            repository => 'https://github.com/payprop/business-truelayer'
         },
     },
     test => {
