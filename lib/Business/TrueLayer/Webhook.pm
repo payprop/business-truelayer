@@ -23,10 +23,13 @@ https://docs.truelayer.com/docs/mandate-webhooks
 
 use strict;
 use warnings;
+use feature qw/ signatures postderef /;
 
 use Moose;
 extends 'Business::TrueLayer::Request';
 no warnings qw/ experimental::signatures experimental::postderef /;
+
+use Business::TrueLayer::Webhook::Mandate;
 
 use namespace::autoclean;
 
@@ -137,22 +140,36 @@ has _payload => (
 
 =head1 Operations on a webhook
 
-=head2 resources
+=head2 resource
 
-Returns an array of resource objects (Payment, Mandate, etc) that are present
-in webhook allowing you to do things with them or update your own data:
+Returns an object (Business::TrueLayer::Webhook::Payment, ...::Mandate, etc) that
+the webhook is referring to allowing you to do things with it or update your own
+data:
 
     if ( $Webhook->is_payment ) {
-        foreach my $Payment ( $Webhook->resources ) {
-            ...
-        }
+        my $Payment = $Webhook->resource;
+        ...
     } elsif ( $Webhook->is_mandate ) {
-         ...
+        my $Mandate = $Webhook->resource;
+        ...
+    }
 
 =cut
 
-sub resources {
+sub resource {
     my ( $self ) = @_;
+
+    my $payload = $self->_payload;
+
+    if ( $self->is_mandate ) {
+
+        my $status = $payload->{type} =~ s/mandate_//r;
+
+        return Business::TrueLayer::Webhook::Mandate->new({
+            id => $payload->{mandate_id},
+            status => $status,
+        });
+    }
 }
 
 =head2 is_payment
@@ -164,9 +181,20 @@ objects that will be returned by the call to ->resources
 
 =cut
 
-sub is_payment {}
+sub is_payment { shift->_is_type( 'payment' ) }
+sub is_mandate { shift->_is_type( 'mandate' ) }
+
+sub _is_type ( $self,$expected_type ) {
+
+    my $type = $self->_payload->{type};
+    return $type =~ /^${expected_type}_/ ? 1 : 0;
+}
 
 =head1 SEE ALSO
+
+L<Business::TrueLayer::Webhook::Payment>
+
+L<Business::TrueLayer::Webhook::Mandate>
 
 =cut
 

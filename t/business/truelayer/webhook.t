@@ -82,6 +82,16 @@ subtest 'no jwks provided' => sub {
 	$Webhook = Business::TrueLayer::Webhook->new({ jwt => $jwt });
 	isa_ok( $Webhook,'Business::TrueLayer::Webhook','without jwks' );
 
+	cmp_deeply(
+		$Webhook->_payload,
+		{
+			'authorized_at' => '2024-08-23T07:26:33Z',
+			'event_version' => 1,
+			'type' => 'mandate_authorized'
+		},
+		'->_payload'
+	);
+
 	subtest 'with unknown jku' => sub {
 
 		$payload{header}{jku} = 'https://some.man.in.the.middle.com';
@@ -97,15 +107,28 @@ subtest 'no jwks provided' => sub {
 
 subtest '_payload' => sub {
 
-	cmp_deeply(
-		$Webhook->_payload,
-		{
-			'authorized_at' => '2024-08-23T07:26:33Z',
-			'event_version' => 1,
-			'type' => 'mandate_authorized'
-		},
-		'->_payload'
-	);
+	# https://docs.truelayer.com/docs/mandate-webhooks
+	$Webhook->_payload({
+		'type' => 'mandate_authorized',
+		'event_id' => 'SOMEUUID',
+		'event_version' => 1,
+		'mandate_id' => '123456',
+		'authorized_at' => '2024-08-23T07:26:33Z',
+		'metadata' => {},
+	});
+
+	ok( ! $Webhook->is_payment,'! ->is_payment' );
+	ok( $Webhook->is_mandate,'->is_mandate' );
+
+	subtest '->resource' => sub {
+		isa_ok(
+			my $Mandate = $Webhook->resource,
+			'Business::TrueLayer::Webhook::Mandate'
+		);
+		is( $Mandate->id,'123456','->id' );
+		is( $Mandate->status,'authorized','->status' );
+		ok( $Mandate->authorized,'->authorized' );
+	};
 };
 
 done_testing();

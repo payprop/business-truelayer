@@ -14,12 +14,15 @@ lib/Business/TrueLayer/Provider/Filter.pm
 lib/Business/TrueLayer/Provider/Scheme.pm
 lib/Business/TrueLayer/Remitter.pm
 lib/Business/TrueLayer/Request.pm
+lib/Business/TrueLayer/Role/Status.pm
 lib/Business/TrueLayer/Signer.pm
 lib/Business/TrueLayer/Types.pm
 lib/Business/TrueLayer/Types/Beneficiary.pm
 lib/Business/TrueLayer/Types/User.pm
 lib/Business/TrueLayer/User.pm
 lib/Business/TrueLayer/Webhook.pm
+lib/Business/TrueLayer/Webhook/Mandate.pm
+lib/Business/TrueLayer/Webhook/Resource.pm
 Makefile.PL
 MANIFEST
 README.md
